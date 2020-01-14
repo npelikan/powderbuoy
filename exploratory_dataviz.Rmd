@@ -1,0 +1,89 @@
+---
+title: "Buoy Data Visualization"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+## Data
+
+```{r data}
+df_51101 <- read_csv("data/buoy/51101.csv.gz",
+               col_types = cols(datetime = col_datetime(),
+                                .default = col_double()))
+
+df_51001 <- read_csv("data/buoy/51001.csv.gz",
+               col_types = cols(datetime = col_datetime(),
+                                .default = col_double()))
+```
+
+## Wave height over time
+
+### 51101
+```{r}
+df_51101 %>%
+    filter(datetime > as.Date("2017-12-31")) %>%
+    ggplot(aes(x = datetime, y = WVHT)) +
+        geom_point(size = .33)
+```
+Poor drifting buoy :(
+
+### 51001
+```{r}
+df_51001 %>%
+    filter(datetime > as.Date("2017-12-31")) %>%
+    ggplot(aes(x = datetime, y = WVHT)) +
+        geom_point(size = .33)
+```
+
+
+## Winter-only wave heights
+```{r}
+df_51101 %>%
+    filter(year(datetime) > 2010, month(datetime) %in% c(11, 12, 1, 2, 3, 4)) %>%
+    ggplot(aes(x = datetime, y = WVHT)) +
+        geom_point(size = .33)
+```
+```{r}
+df_51101 %>%
+    filter(datetime >= make_date(year = 2018, month = 11, day = 1),
+           datetime <= make_date(year = 2019, month = 4, day = 30)) %>%
+    ggplot(aes(x = datetime, y = WVHT)) +
+        geom_point(size = .33)
+```
+
+```{r}
+assign_ski_season_year <- function(date_vec){
+    map_dbl(date_vec, function(dt){
+        if (month(dt) >= 1 & month(dt) <= 4){
+            year(dt) - 1
+        } else {
+            year(dt)
+        }
+    })
+}
+
+assign_ski_season <- function(date_vec){
+    map_dbl(date_vec, function(dt){
+        if (month(dt) >= 1 & month(dt) <= 4){
+            yr <- year(dt) - 1
+        } else {
+            yr <- year(dt)
+        }
+        
+        i <- make_date(year = yr, month = 11, day = 1)
+        int_length(i %--% dt)
+    })
+}
+
+k <- df_51101 %>%
+    filter(datetime >= make_date(year = 2018, month = 11, day = 1),
+           datetime <= make_date(year = 2019, month = 4, day = 30)) %>%
+    mutate(season_dt = assign_ski_season(datetime),
+           season_year = assign_ski_season_year(datetime))
+
+```
