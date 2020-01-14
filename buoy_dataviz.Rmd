@@ -1,0 +1,29 @@
+---
+title: "Buoy Data Visualization"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+## Data
+
+```{r data}
+df <- read_csv("data/51101_data.csv.gz",
+               col_types = cols(datetime = col_datetime(),
+                                .default = col_double()))
+```
+
+## Wave height over time
+```{r}
+k <- df %>% filter(year(datetime) == 2018)
+
+df %>%
+    filter(datetime > as.Date("2017-12-31")) %>%
+    ggplot(aes(x = datetime, y = WVHT)) +
+        geom_line() + geom_point()
+```
+Poor drifting buoy :(
+```{r}
