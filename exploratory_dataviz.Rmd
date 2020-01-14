@@ -55,6 +55,18 @@ df_51101 %>%
     ggplot(aes(x = datetime, y = WVHT)) +
         geom_point(size = .33)
 ```
+```{r}
+snotel_df <- read_csv("data/snotel/366.csv.gz",
+               col_types = cols(datetime = col_datetime(),
+                                .default = col_double())) %>%
+    mutate(deltaswe = PINC)
+
+snotel_df %>%
+    ggplot(aes(x = datetime, y = deltaswe)) +
+        geom_point(size = .33) + geom_line()
+
+```
+
 
 ```{r}
 assign_ski_season_year <- function(date_vec){
@@ -85,5 +97,4 @@ k <- df_51101 %>%
            datetime <= make_date(year = 2019, month = 4, day = 30)) %>%
     mutate(season_dt = assign_ski_season(datetime),
            season_year = assign_ski_season_year(datetime))
-
 ```

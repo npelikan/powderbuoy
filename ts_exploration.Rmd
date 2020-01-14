@@ -1,0 +1,68 @@
+---
+title: "ARIMA"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(tsibble)
+library(feasts)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+## Data
+
+```{r data}
+df_51101 <- read_csv("data/buoy/51101.csv.gz",
+               col_types = cols(datetime = col_datetime(),
+                                .default = col_double())) %>%
+    distinct()
+
+df_51001 <- read_csv("data/buoy/51001.csv.gz",
+               col_types = cols(datetime = col_datetime(),
+                                .default = col_double())) %>%
+    distinct()
+
+snotel_df <- read_csv("data/snotel/366.csv.gz",
+               col_types = cols(datetime = col_datetime(),
+                                .default = col_double())) %>%
+    filter(year(datetime) >= 2008)
+
+snotel_df <- snotel_df %>%
+    mutate(datetime = as.Date(datetime))
+
+snotel_ts <- snotel_df %>% 
+    mutate(deltaswe_raw = SWE - lag(SWE),
+           swe_inc = ifelse(deltaswe_raw < 0, 0, deltaswe_raw)) %>%
+    as_tsibble(index = datetime)
+
+df_51101_agg <- df_51101 %>% group_by(date(datetime)) %>%
+    drop_na(WVHT) %>%
+    summarize(mean_wvht = mean(WVHT, na.rm = T),
+              max_wvht = max(WVHT, na.rm = T)) %>%
+    rename(datetime = "date(datetime)")
+
+ts_51101 <- df_51101_agg %>%
+    as_tsibble(index = datetime)
+```
+
+```{r}
+snotel_ts %>%
+    gg_season(swe_inc)
+```
+```{r}
+ts_51101 %>%
+    fill_gaps() %>%
+    gg_season(max_wvht)
+```
+
+```{r}
+joined_ts <- snotel_ts %>% 
+    left_join(ts_51101)
+    
+joined_ts %>%
+    CCF(max_wvht, swe_inc) %>%
+    autoplot() +
+        theme(axis.text.x = element_text(size = 3))
+```
