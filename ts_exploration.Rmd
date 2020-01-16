@@ -34,7 +34,8 @@ snotel_df <- snotel_df %>%
 
 snotel_ts <- snotel_df %>% 
     mutate(deltaswe_raw = SWE - lag(SWE),
-           swe_inc = ifelse(deltaswe_raw < 0, 0, deltaswe_raw)) %>%
+           swe_inc = ifelse(deltaswe_raw < 0, 0, deltaswe_raw),
+           sig_inc = ifelse(deltaswe_raw >= .5, 1, 0)) %>%
     as_tsibble(index = datetime)
 
 df_51101_agg <- df_51101 %>% group_by(date(datetime)) %>%
@@ -62,7 +63,57 @@ joined_ts <- snotel_ts %>%
     left_join(ts_51101)
     
 joined_ts %>%
-    CCF(max_wvht, swe_inc) %>%
+    CCF(max_wvht, swe_inc, lag_max = 10) %>%
     autoplot() +
         theme(axis.text.x = element_text(size = 3))
+```
+
+Ski Season Only
+```{r}
+assign_ski_season_year <- function(date_vec){
+    map_dbl(date_vec, function(dt){
+        if (month(dt) >= 1 & month(dt) <= 4){
+            year(dt) - 1
+        } else {
+            year(dt)
+        }
+    })
+}
+
+assign_ski_season_day <- function(date_vec){
+    map_dbl(date_vec, function(dt){
+        if (month(dt) >= 1 & month(dt) <= 4){
+            yr <- year(dt) - 1
+        } else {
+            yr <- year(dt)
+        }
+        i <- make_date(year = yr, month = 11, day = 1)
+        int_length(i %--% dt)/(60*60*24)
+    })
+}
+
+df_51101_ss <- df_51101_agg %>%
+    filter(month(datetime) %in% c(11, 12, 1, 2, 3, 4)) %>%
+    mutate(season_dt = assign_ski_season_day(datetime),
+           season_year = assign_ski_season_year(datetime))
+
+snotel_df_ss <- snotel_df %>% 
+    mutate(deltaswe_raw = SWE - lag(SWE),
+           swe_inc = ifelse(deltaswe_raw < 0, 0, deltaswe_raw),
+           sig_inc = ifelse(deltaswe_raw >= .3, 1, 0)) %>%
+    filter(month(datetime) %in% c(11, 12, 1, 2, 3, 4)) %>%
+    mutate(season_dt = assign_ski_season_day(datetime),
+           season_year = assign_ski_season_year(datetime))
+
+combined_ss_df <- df_51101_ss %>%
+    left_join(snotel_df_ss)
+```
+
+```{r fig.width=10}
+combined_ss_df %>%
+    select(season_year, season_dt, swe_inc, max_wvht) %>%
+    gather(-season_year, -season_dt, key = "var", value = "value") %>%
+    ggplot(aes(x = season_dt, y = value)) +
+        geom_line() + 
+        facet_grid(var ~ season_year, scales = "free_y")
 ```

@@ -88,7 +88,7 @@ assign_ski_season <- function(date_vec){
         }
         
         i <- make_date(year = yr, month = 11, day = 1)
-        int_length(i %--% dt)
+        int_length(i %--% dt)/(60*60*24)
     })
 }
 
