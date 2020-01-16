@@ -117,3 +117,4 @@ combined_ss_df %>%
         geom_line() + 
         facet_grid(var ~ season_year, scales = "free_y")
 ```
+

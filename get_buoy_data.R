@@ -78,7 +78,7 @@ get_buoy_data <- function(buoy_code, hist_years){
     oct19_data <- "https://www.ndbc.noaa.gov/view_text_file.php?filename={buoy_code}a2019.txt.gz&dir=data/stdmet/Oct/" %>%
         glue() %>% GET() %>% content() %>% parse_buoy_data()
 
-    nov19_data <- "https://www.ndbc.noaa.gov/data/stdmet/Nov/{buoy_code}.txt" %>%
+    nov19_data <- "https://www.ndbc.noaa.gov/view_text_file.php?filename={buoy_code}b2019.txt.gz&dir=data/stdmet/Nov/" %>%
         glue() %>% GET() %>% content() %>% parse_buoy_data()
 
     current_data <- "https://www.ndbc.noaa.gov/data/realtime2/{buoy_code}.txt" %>%
